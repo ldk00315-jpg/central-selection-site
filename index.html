@@ -68,6 +68,7 @@ h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
 ol, ul { padding: 0; list-style: none; }
 img { display: block; max-width: 100%; height: auto; }
 h1, h2, h3 { word-break: auto-phrase; }
+.np { display: inline-block; }
 .wrap { max-width: var(--w); margin: 0 auto; padding: 0 var(--gutter); }
 .mono { font-family: var(--mono); font-feature-settings: normal; letter-spacing: .04em; }
 .skip { position: absolute; left: -999px; top: 8px; background: var(--signal); color: #fff; padding: 8px 14px; z-index: 60; }
@@ -476,7 +477,7 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
     <div class="head">
       <div class="rv">
         <p class="tag"><span class="ja">プロダクト</span><span class="en">Products</span></p>
-        <h2 class="disp"><span class="ja">必要になるたび作ってきた。</span><span class="en">Built as the need arose.</span></h2>
+        <h2 class="disp"><span class="ja"><span class="np">必要になるたび</span><span class="np">作ってきた。</span></span><span class="en">Built as the need arose.</span></h2>
       </div>
       <p class="rv ja" style="--d:.1s">業務システムからブラウザ拡張、デスクトップ、スマートフォンまで。どれも自分たちの現場で使うために作り、使いながら直しています。</p>
       <p class="rv en" style="--d:.1s">From back-office systems to browser extensions, desktop tools and mobile apps. Each was built for our own floor and is refined in daily use.</p>
@@ -549,7 +550,7 @@ footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; g
     <div class="close">
       <div class="rv" id="contact">
         <p class="tag"><span class="ja">お問い合わせ</span><span class="en">Contact</span></p>
-        <h2 class="disp"><span class="ja">一緒に<br>動かしませんか。</span><span class="en">Let's make it run.</span></h2>
+        <h2 class="disp"><span class="ja"><span class="np">一緒に</span><span class="np">動かしませんか。</span></span><span class="en">Let's make it run.</span></h2>
         <p class="lede"><span class="ja">システムの導入のご相談・お取引・勉強会でのお話など、メールでお気軽にどうぞ。</span><span class="en">For product inquiries, business or speaking requests, email us any time.</span></p>
         <a class="mail" href="mailto:info@central-selection.com">info@central-selection.com <span aria-hidden="true">→</span></a>
       </div>
