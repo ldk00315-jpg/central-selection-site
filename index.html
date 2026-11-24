@@ -1,0 +1,753 @@
+<!doctype html>
+<!--
+  central-selection.com
+  Hand-written HTML, CSS, JavaScript and GLSL. No framework, no build step, no tracking, no cookies.
+  The terrain in the hero is a fragment shader (fractal noise, contour lines by screen-space derivatives).
+  Add ?motion=on to the URL to see the motion even when the OS asks for reduced motion.
+-->
+<html lang="ja" data-lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Central Selection | 商いを技術で動かす</title>
+<meta name="description" content="Central Selection は長野から日本の品を世界へ届ける越境 EC の会社です。その仕事を動かすソフトウェアをすべて自分たちで作っています。">
+<meta name="theme-color" content="#06101c">
+<link rel="canonical" href="https://central-selection.com/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://central-selection.com/">
+<meta property="og:title" content="Central Selection — Commerce, run by engineering">
+<meta property="og:description" content="Cross-border commerce from Nagano, Japan, run on software we build ourselves.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306101c'/%3E%3Cpath d='M44 18H27a14 14 0 0 0 0 28h17M40 26H28a6 6 0 0 0 0 12h12' fill='none' stroke='%23e2472b' stroke-width='5'/%3E%3C/svg%3E">
+<script>
+/* Before first paint: language (?lang= > saved > browser) and motion preference (?motion=on overrides). */
+(function () {
+  var d = document.documentElement, q = /[?&]lang=(ja|en)/.exec(location.search), s = null;
+  try { s = localStorage.getItem("cs-lang"); } catch (e) {}
+  var l = q ? q[1] : (s === "ja" || s === "en") ? s : (/^ja/i.test(navigator.language || "ja") ? "ja" : "en");
+  d.setAttribute("data-lang", l); d.lang = l;
+  var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches && !/[?&]motion=on/.test(location.search);
+  d.className = "js" + (calm ? " calm" : "");
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+JP:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Shippori+Mincho:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* ---------- tokens ---------- */
+:root {
+  --night: #06101c;
+  --indigo: #0c1d33;
+  --paper: #f5f6f7;
+  --card: #ffffff;
+  --ink: #0a1b2e;
+  --ink-2: #4b5b6c;
+  --ink-3: #8593a1;
+  --rule: #d6dde4;
+  --ice: #bcd6ee;
+  --ice-2: #7e98b3;
+  --signal: #e2472b;
+  --sans: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", system-ui, sans-serif;
+  --serif: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --serif-en: "Instrument Serif", "Times New Roman", serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --w: 1200px;
+  --gutter: clamp(20px, 4.5vw, 56px);
+  --ease: cubic-bezier(.2, .7, .1, 1);
+}
+
+/* ---------- base ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 80px; -webkit-text-size-adjust: 100%; }
+html.calm { scroll-behavior: auto; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.85; font-feature-settings: "palt"; -webkit-font-smoothing: antialiased; }
+html[data-lang="en"] body { line-height: 1.65; font-feature-settings: normal; }
+html[data-lang="ja"] .en, html[data-lang="en"] .ja { display: none !important; }
+a { color: inherit; text-underline-offset: .22em; text-decoration-thickness: 1px; }
+:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 2px; }
+h1, h2, h3, p, ol, ul, dl, dd, figure { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+img { display: block; max-width: 100%; height: auto; }
+h1, h2, h3 { word-break: auto-phrase; }
+.wrap { max-width: var(--w); margin: 0 auto; padding: 0 var(--gutter); }
+.mono { font-family: var(--mono); font-feature-settings: normal; letter-spacing: .04em; }
+.skip { position: absolute; left: -999px; top: 8px; background: var(--signal); color: #fff; padding: 8px 14px; z-index: 60; }
+.skip:focus { left: 8px; }
+.disp { font-family: var(--serif); font-weight: 600; letter-spacing: .02em; }
+html[data-lang="en"] .disp, .disp.pn { font-family: var(--serif-en); font-weight: 400; letter-spacing: -.015em; }
+
+/* ---------- progress + header ---------- */
+.bar { position: fixed; left: 0; top: 0; height: 2px; width: 100%; background: var(--signal); transform: scaleX(0); transform-origin: 0 50%; z-index: 40; }
+.top { position: fixed; inset: 0 0 auto 0; z-index: 30; color: #fff; transition: background .35s, color .35s, border-color .35s; border-bottom: 1px solid transparent; }
+.top.solid { background: color-mix(in srgb, var(--paper) 88%, transparent); color: var(--ink); border-color: var(--rule); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.top .wrap { display: flex; align-items: center; gap: 28px; height: 68px; }
+.brand { display: flex; align-items: center; gap: 11px; text-decoration: none; font-weight: 600; font-size: 16px; white-space: nowrap; }
+.brand svg { width: 26px; height: 26px; flex: none; }
+.brand svg rect { fill: #fff; transition: fill .35s; }
+.top.solid .brand svg rect { fill: var(--ink); }
+.top nav { margin-left: auto; display: flex; gap: 28px; font-size: 14px; }
+.top nav a { text-decoration: none; opacity: .78; position: relative; padding: 4px 0; }
+.top nav a::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: currentColor; transform: scaleX(0); transform-origin: 0 50%; transition: transform .35s var(--ease); }
+.top nav a:hover { opacity: 1; }
+.top nav a:hover::after { transform: scaleX(1); }
+.lang { display: flex; border: 1px solid color-mix(in srgb, currentColor 35%, transparent); border-radius: 3px; overflow: hidden; flex: none; }
+.lang button { font: 500 12px/1 var(--mono); letter-spacing: .06em; color: inherit; background: transparent; border: 0; padding: 9px 11px; cursor: pointer; }
+.lang button span { opacity: .7; }
+.lang button + button { border-left: 1px solid color-mix(in srgb, currentColor 35%, transparent); }
+.lang button[aria-pressed="true"] { background: currentColor; }
+.lang button[aria-pressed="true"] span { color: var(--night); opacity: 1; }
+.top.solid .lang button[aria-pressed="true"] span { color: var(--paper); }
+
+/* ---------- hero ---------- */
+.hero { position: relative; min-height: 100vh; min-height: 100svh; background: radial-gradient(120% 90% at 70% 20%, #12294a 0%, var(--night) 62%); color: #fff; display: flex; overflow: hidden; }
+.hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1.4s ease; }
+.hero canvas.on { opacity: 1; }
+.hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(6, 16, 28, .74) 0%, rgba(6, 16, 28, .2) 58%, transparent 100%), linear-gradient(0deg, var(--night) 0%, transparent 26%); }
+.hero .wrap { position: relative; z-index: 2; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; padding-top: 120px; padding-bottom: clamp(28px, 5vh, 56px); }
+.eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; font-size: 12px; text-transform: uppercase; color: var(--ice); }
+.eyebrow > span + span::before { content: "/"; margin-right: 18px; color: var(--ice-2); }
+.eyebrow .live { display: inline-flex; align-items: center; gap: 9px; color: #fff; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--signal); animation: ping 2.4s ease-out infinite; }
+h1 { margin-top: 26px; font-size: clamp(46px, 9.2vw, 136px); line-height: 1.16; }
+html[data-lang="en"] h1 { font-size: clamp(48px, 9.6vw, 148px); line-height: .98; }
+h1 .ln { display: block; overflow: hidden; padding-bottom: .1em; }
+h1 .ln > span { display: block; }
+.js:not(.calm) h1 .ln > span { transform: translateY(110%); animation: rise 1.25s var(--ease) forwards; }
+.js:not(.calm) h1 .ln:nth-child(2) > span { animation-delay: .14s; }
+h1 em { font-style: normal; color: var(--signal); }
+html[data-lang="en"] h1 em { font-style: italic; }
+.lead { margin-top: 30px; max-width: 34em; font-size: clamp(15.5px, 1.35vw, 18px); color: #d5e2ee; }
+html[data-lang="en"] .lead { max-width: 30em; }
+.hero-foot { margin-top: clamp(40px, 8vh, 96px); padding-top: 22px; border-top: 1px solid rgba(188, 214, 238, .22); display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 22px 40px; }
+.hero-foot dl { display: flex; flex-wrap: wrap; gap: 18px clamp(28px, 5vw, 72px); }
+.hero-foot dt { font: 400 11px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ice-2); }
+.hero-foot dd { font: 500 clamp(18px, 2.1vw, 27px)/1.3 var(--mono); letter-spacing: -.02em; white-space: nowrap; }
+.cue { display: inline-flex; align-items: center; gap: 12px; font: 400 11px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--ice); text-decoration: none; }
+.cue i { width: 1px; height: 44px; background: linear-gradient(var(--ice), transparent); transform-origin: 50% 0; animation: drip 2.2s ease-in-out infinite; }
+.js:not(.calm) .fade { opacity: 0; animation: fade 1.2s ease .5s forwards; }
+
+/* ---------- section scaffolding ---------- */
+.sec { padding-top: clamp(84px, 12vw, 168px); padding-bottom: clamp(84px, 12vw, 168px); }
+.tag { display: flex; align-items: center; gap: 12px; font: 400 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--signal); margin-bottom: 26px; }
+.tag::before { content: ""; width: 28px; height: 1px; background: currentColor; }
+h2 { font-size: clamp(32px, 4.8vw, 68px); line-height: 1.28; text-wrap: balance; }
+html[data-lang="en"] h2 { font-size: clamp(36px, 5.4vw, 78px); line-height: 1.04; }
+.head { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 24px 64px; align-items: end; margin-bottom: clamp(44px, 6vw, 84px); }
+.head p { color: var(--ink-2); max-width: 34em; }
+.js:not(.calm) .rv { opacity: 0; transform: translateY(26px); transition: opacity .9s ease, transform .9s var(--ease); transition-delay: var(--d, 0s); }
+.js:not(.calm) .rv.in { opacity: 1; transform: none; }
+
+/* ---------- manifesto ---------- */
+.mf { font-size: clamp(30px, 5.4vw, 80px); line-height: 1.38; max-width: 16em; }
+html[data-lang="en"] .mf { line-height: 1.1; max-width: 13em; }
+.mf .u { color: #c6ced6; transition: color .5s ease; }
+.mf .u.on { color: var(--ink); }
+.mf .u.hot.on { color: var(--signal); }
+.mf-sub { margin-top: clamp(40px, 5vw, 72px); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 64px; max-width: 900px; margin-left: auto; }
+.mf-sub p { color: var(--ink-2); padding-top: 18px; border-top: 1px solid var(--ink); }
+.mf-sub b { display: block; font: 400 11px/1.6 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; }
+
+/* ---------- loop ---------- */
+#loop { border-top: 1px solid var(--rule); }
+.loop { display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 6fr); gap: 40px clamp(40px, 6vw, 96px); align-items: center; }
+.orbit { width: 100%; max-width: 540px; margin: 0 auto; display: block; overflow: visible; }
+.orbit .ring { fill: none; stroke: var(--rule); }
+.orbit .ring.dash { stroke: var(--ink-3); stroke-dasharray: 2 9; animation: spin 80s linear infinite; transform-origin: 280px 280px; }
+.orbit .node circle { fill: var(--paper); stroke: var(--ink); stroke-width: 1.4; }
+.orbit .node text { font: 600 19px var(--serif); fill: var(--ink); text-anchor: middle; dominant-baseline: central; }
+.orbit .node text.en { font: 400 21px var(--serif-en); }
+.orbit .node text.num { font: 400 10px var(--mono); fill: var(--ink-3); letter-spacing: .1em; }
+.orbit .core { font: 400 10.5px var(--mono); fill: var(--ink-3); text-anchor: middle; letter-spacing: .14em; }
+.orbit .p { fill: var(--signal); }
+.steps li { display: grid; grid-template-columns: 48px 1fr; gap: 4px 14px; padding: 22px 0; border-top: 1px solid var(--rule); }
+.steps li:last-child { border-bottom: 1px solid var(--rule); }
+.steps .n { font: 400 12px/2.3 var(--mono); color: var(--signal); }
+.steps h3 { font-size: 22px; line-height: 1.5; }
+html[data-lang="en"] .steps h3 { font-size: 27px; line-height: 1.2; }
+.steps p { grid-column: 2; color: var(--ink-2); font-size: 15px; }
+.figs { margin-top: clamp(56px, 8vw, 104px); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--ink); }
+.figs div { padding: 26px 24px 0 0; display: flex; flex-direction: column; }
+.figs div + div { padding-left: 24px; border-left: 1px solid var(--rule); }
+.figs dt { order: 2; margin-top: 12px; font-size: 13.5px; line-height: 1.6; color: var(--ink-2); }
+.figs dd { font: 500 clamp(30px, 4.4vw, 60px)/1 var(--mono); letter-spacing: -.045em; white-space: nowrap; }
+.asof { margin-top: 22px; font: 400 11px/1.6 var(--mono); letter-spacing: .06em; color: var(--ink-3); text-transform: uppercase; }
+
+/* ---------- capabilities (dark) ---------- */
+#tech { background: var(--night); color: #fff; position: relative; overflow: hidden; }
+#tech::before { content: ""; position: absolute; inset: 0; background: radial-gradient(70% 60% at 85% 0%, rgba(30, 70, 120, .5), transparent 70%), radial-gradient(50% 50% at 0% 100%, rgba(226, 71, 43, .1), transparent 70%); pointer-events: none; }
+#tech .wrap { position: relative; }
+#tech .head p { color: #b9c9d9; }
+.caps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgba(188, 214, 238, .28); border-left: 1px solid rgba(188, 214, 238, .16); }
+.cap { position: relative; padding: 30px 30px 34px; border-right: 1px solid rgba(188, 214, 238, .16); border-bottom: 1px solid rgba(188, 214, 238, .16); display: flex; flex-direction: column; overflow: hidden; }
+.cap::before { content: ""; position: absolute; inset: 0; background: radial-gradient(260px 260px at var(--mx, 50%) var(--my, 0%), rgba(188, 214, 238, .14), transparent 70%); opacity: 0; transition: opacity .4s; pointer-events: none; }
+.cap:hover::before { opacity: 1; }
+.cap svg { width: 100%; max-width: 220px; height: auto; color: var(--ice); margin-bottom: 26px; overflow: visible; }
+.cap .k { font: 400 11px/1 var(--mono); letter-spacing: .1em; color: var(--ice-2); text-transform: uppercase; }
+.cap h3 { margin: 12px 0 10px; font-size: 22px; line-height: 1.45; }
+html[data-lang="en"] .cap h3 { font-size: 28px; line-height: 1.15; }
+.cap p { color: #b9c9d9; font-size: 15px; }
+.gl { fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+.gs { fill: var(--signal); stroke: none; }
+.gss { fill: none; stroke: var(--signal); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* glyph motions */
+.g1 .gs { animation: g1 4.2s var(--ease) infinite; }
+.g2 .flow { stroke-dasharray: 3 7; animation: dash 1.6s linear infinite; }
+.g2 .gs { transform-box: fill-box; transform-origin: center; animation: pulse 2.4s ease-in-out infinite; }
+.g3 .hand { transform-origin: 80px 50px; animation: spin 6s linear infinite; }
+.g4 .b { animation: g4 4.5s var(--ease) infinite; }
+.g4 .gss { stroke-dasharray: 30; animation: g4c 4.5s ease infinite; }
+.g5 .gl { stroke-dasharray: 300; animation: draw 6s ease-in-out infinite; }
+.g5 .gl:nth-child(2) { animation-delay: .5s; } .g5 .gl:nth-child(3) { animation-delay: 1s; }
+.g6 .gs { animation: g6 4.8s ease-in-out infinite; }
+.g6 .gss { stroke-dasharray: 34; animation: g6c 4.8s ease infinite; }
+
+/* ---------- products ---------- */
+.feat { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px clamp(36px, 5vw, 80px); align-items: center; }
+.shot { perspective: 1400px; }
+.browser { border-radius: 10px; overflow: hidden; background: var(--card); box-shadow: 0 1px 0 rgba(10, 27, 46, .08), 0 40px 80px -30px rgba(10, 27, 46, .38), 0 16px 32px -18px rgba(10, 27, 46, .25); transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .6s var(--ease); will-change: transform; }
+.browser .chrome { height: 34px; background: #e9edf1; display: flex; align-items: center; gap: 7px; padding: 0 14px; }
+.browser .chrome i { width: 9px; height: 9px; border-radius: 50%; background: #c2cbd4; }
+.browser .chrome span { margin-left: 14px; flex: 1; max-width: 300px; height: 18px; border-radius: 9px; background: #fff; font: 400 10px/18px var(--mono); color: var(--ink-3); padding: 0 10px; }
+.feat h3, .feat2 h3 { font-size: clamp(30px, 3.6vw, 50px); line-height: 1.2; }
+.feat .s, .feat2 .s, .row .s { font: 400 11px/1.6 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--signal); }
+.feat p, .feat2 p { margin-top: 16px; color: var(--ink-2); }
+.feat p.st, .feat2 p.st, .st { margin-top: 20px; font: 400 12px/1.8 var(--mono); color: var(--ink-3); }
+.go { display: inline-flex; align-items: center; gap: 10px; margin-top: 26px; font-size: 14px; font-weight: 500; text-decoration: none; padding-bottom: 5px; border-bottom: 1px solid var(--ink); }
+.go > span:last-child { font-family: var(--mono); transition: transform .35s var(--ease); }
+.go:hover > span:last-child { transform: translate(3px, -3px); }
+.feat2 { margin-top: clamp(72px, 10vw, 140px); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 40px clamp(36px, 5vw, 80px); align-items: center; }
+.phone-stage { position: relative; background: var(--indigo); border-radius: 14px; padding: clamp(36px, 5vw, 64px) 0 0; overflow: hidden; display: flex; justify-content: center; height: clamp(380px, 44vw, 520px); }
+.phone-stage::before { content: ""; position: absolute; inset: 0; background: repeating-radial-gradient(circle at 30% 120%, transparent 0 26px, rgba(188, 214, 238, .09) 26px 27px); }
+.phone { position: relative; width: min(58%, 290px); align-self: flex-start; border: 7px solid #0b0f15; border-radius: 30px; overflow: hidden; background: #0b0f15; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .6); transform: translateY(var(--py, 0px)); }
+.rows { margin-top: clamp(72px, 10vw, 128px); border-top: 1px solid var(--ink); }
+.row { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 6fr) minmax(0, 3fr); gap: 8px 40px; align-items: baseline; padding: 26px 0; border-bottom: 1px solid var(--rule); transition: padding .45s var(--ease), background .45s; }
+.row:hover { padding-left: 14px; padding-right: 14px; background: var(--card); }
+.row h3 { font-size: clamp(22px, 2.3vw, 30px); line-height: 1.3; }
+.row h3 .s { display: block; margin-bottom: 4px; }
+.row p { color: var(--ink-2); font-size: 15px; }
+.row p.st { margin: 0; text-align: right; font-size: 12px; color: var(--ink-3); }
+
+/* ---------- how we build ---------- */
+#build { border-top: 1px solid var(--rule); overflow: hidden; }
+.rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 64px; counter-reset: r; border-top: 1px solid var(--ink); }
+.rules li { counter-increment: r; padding: 28px 0 30px; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 48px 1fr; gap: 4px 14px; align-content: start; }
+.rules li::before { content: counter(r, decimal-leading-zero); font: 400 12px/2.5 var(--mono); color: var(--signal); }
+.rules h3 { font-size: 22px; line-height: 1.5; }
+html[data-lang="en"] .rules h3 { font-size: 27px; line-height: 1.2; }
+.rules p { grid-column: 2; color: var(--ink-2); font-size: 15px; }
+.mq { margin: clamp(64px, 9vw, 120px) 0 clamp(84px, 12vw, 168px); display: flex; flex-direction: column; gap: 14px; -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+.mq .track { display: flex; gap: 14px; width: max-content; animation: slide 46s linear infinite; }
+.mq .track.rev { animation-direction: reverse; animation-duration: 54s; }
+.mq:hover .track { animation-play-state: paused; }
+.mq span { font: 400 clamp(15px, 1.5vw, 19px)/1 var(--mono); padding: 16px 22px; border: 1px solid var(--rule); border-radius: 999px; white-space: nowrap; color: var(--ink); background: var(--card); }
+.calm .mq { -webkit-mask-image: none; mask-image: none; padding: 0 var(--gutter); }
+.calm .mq .track { flex-wrap: wrap; width: auto; justify-content: center; }
+.calm .mq .track [aria-hidden="true"] { display: none; }
+
+/* ---------- closing ---------- */
+#company { position: relative; background: var(--night); color: #fff; overflow: hidden; }
+#company::before { content: ""; position: absolute; inset: -20% -10%; background: repeating-radial-gradient(ellipse at 78% 118%, transparent 0 38px, rgba(188, 214, 238, .1) 38px 39px); animation: breathe 14s ease-in-out infinite alternate; }
+#company .wrap { position: relative; }
+.close { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 56px clamp(40px, 6vw, 96px); align-items: end; }
+.close h2 { font-size: clamp(34px, 5.4vw, 78px); line-height: 1.2; }
+html[data-lang="en"] .close h2 { font-size: clamp(44px, 7.4vw, 110px); }
+html[data-lang="en"] .close h2 { line-height: .98; }
+.close .lede { margin-top: 22px; color: #b9c9d9; max-width: 28em; }
+.mail { display: inline-flex; align-items: center; gap: 14px; margin-top: 34px; font: 500 clamp(16px, 2vw, 25px)/1.3 var(--mono); letter-spacing: -.02em; white-space: nowrap; text-decoration: none; padding-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, .5); transition: border-color .3s, color .3s; }
+.mail:hover { color: var(--signal); border-color: var(--signal); }
+.co dl div { display: grid; grid-template-columns: 110px 1fr; gap: 18px; padding: 15px 0; border-top: 1px solid rgba(188, 214, 238, .2); font-size: 15px; }
+.co dl div:last-child { border-bottom: 1px solid rgba(188, 214, 238, .2); }
+.co dt { color: var(--ice-2); font-size: 13px; padding-top: 2px; }
+footer { background: var(--night); color: var(--ice-2); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-top: 22px; padding-bottom: 28px; font-size: 11.5px; border-top: 1px solid rgba(188, 214, 238, .14); }
+
+/* ---------- keyframes ---------- */
+@keyframes rise { to { transform: none; } }
+@keyframes fade { to { opacity: 1; } }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(226, 71, 43, .55); } 70%, 100% { box-shadow: 0 0 0 10px rgba(226, 71, 43, 0); } }
+@keyframes drip { 0% { transform: scaleY(0); opacity: 1; } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes dash { to { stroke-dashoffset: -20; } }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.6); } }
+@keyframes draw { 0% { stroke-dashoffset: 300; } 35%, 80% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -300; } }
+@keyframes slide { to { transform: translateX(calc(-50% - 7px)); } }
+@keyframes breathe { from { transform: scale(1) translateY(0); } to { transform: scale(1.08) translateY(-18px); } }
+@keyframes g1 { 0%, 34% { transform: translateX(0); opacity: 1; } 46%, 62% { transform: translateX(50px); } 74%, 92% { transform: translateX(100px); opacity: 1; } 100% { transform: translateX(100px); opacity: 0; } }
+@keyframes g4 { 0%, 18% { transform: translateY(var(--o)); } 46%, 84% { transform: none; } 100% { transform: translateY(var(--o)); } }
+@keyframes g4c { 0%, 46% { stroke-dashoffset: 30; } 60%, 84% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 30; } }
+@keyframes g6 { 0% { transform: translateX(0); opacity: 0; } 8% { opacity: 1; } 30%, 56% { transform: translateX(44px); } 86% { transform: translateX(124px); opacity: 1; } 100% { transform: translateX(124px); opacity: 0; } }
+@keyframes g6c { 0%, 36% { stroke-dashoffset: 34; } 52%, 90% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 34; } }
+.calm *, .calm *::before, .calm *::after { animation: none !important; }
+.calm .g4 .gss, .calm .g6 .gss, .calm .g5 .gl { stroke-dasharray: none; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 980px) {
+  .head, .loop, .feat, .feat2, .close { grid-template-columns: 1fr; }
+  .head { gap: 18px; }
+  .caps { grid-template-columns: 1fr 1fr; }
+  .figs { grid-template-columns: 1fr 1fr; }
+  .figs div { padding-bottom: 26px; }
+  .figs div:nth-child(3) { padding-left: 0; border-left: 0; }
+  .figs div:nth-child(n+3) { border-top: 1px solid var(--rule); }
+  .row { grid-template-columns: 1fr; }
+  .row p.st { text-align: left; }
+  .feat2 .phone-stage { order: -1; }
+  .top nav { display: none; }
+  .lang { margin-left: auto; }
+}
+@media (max-width: 640px) {
+  .caps, .rules, .mf-sub { grid-template-columns: 1fr; }
+  .mf-sub p + p { margin-top: 28px; }
+  .co dl div { grid-template-columns: 88px 1fr; }
+  .hero-foot .cue { display: none; }
+  .orbit .node text { font-size: 24px; }
+  .orbit .node text.en { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main"><span class="ja">本文へ</span><span class="en">Skip to content</span></a>
+<div class="bar" id="bar" aria-hidden="true"></div>
+
+<header class="top" id="hdr">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Central Selection">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14"/><path d="M44 18H27a14 14 0 0 0 0 28h17M40 26H28a6 6 0 0 0 0 12h12" fill="none" stroke="var(--signal)" stroke-width="5"/></svg>
+      <span>Central Selection</span>
+    </a>
+    <nav aria-label="Main">
+      <a href="#loop"><span class="ja">事業</span><span class="en">Business</span></a>
+      <a href="#tech"><span class="ja">技術</span><span class="en">Capabilities</span></a>
+      <a href="#work"><span class="ja">プロダクト</span><span class="en">Products</span></a>
+      <a href="#build"><span class="ja">開発の進め方</span><span class="en">How we build</span></a>
+      <a href="#company"><span class="ja">会社情報</span><span class="en">Company</span></a>
+    </nav>
+    <div class="lang" role="group" aria-label="Language / 言語">
+      <button type="button" data-set-lang="ja" aria-pressed="true"><span>日本語</span></button>
+      <button type="button" data-set-lang="en" aria-pressed="false"><span>EN</span></button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ================= hero ================= -->
+<div class="hero" id="top">
+  <canvas id="terrain" aria-hidden="true"></canvas>
+  <div class="wrap">
+    <p class="eyebrow mono fade">
+      <span class="live"><i class="dot" aria-hidden="true"></i><span class="ja">本番稼働中</span><span class="en">In production</span></span>
+      <span>Nagano, Japan</span>
+      <span><span class="ja">越境 EC × ソフトウェア開発</span><span class="en">Cross-border commerce × software</span></span>
+    </p>
+    <h1 class="disp">
+      <span class="ja"><span class="ln"><span>商いを</span></span><span class="ln"><span><em>技術</em>で動かす。</span></span></span>
+      <span class="en"><span class="ln"><span>Commerce,</span></span><span class="ln"><span>run by <em>engineering.</em></span></span></span>
+    </h1>
+    <p class="lead fade ja">Central Selection は長野から日本の品を世界へ届ける越境 EC の会社です。その仕事を動かすソフトウェアをすべて自分たちで作っています。</p>
+    <p class="lead fade en">Central Selection sells goods from Japan to the world from Nagano — and builds every piece of software that runs the business.</p>
+    <div class="hero-foot fade">
+      <dl>
+        <div><dt><span class="ja">販売する市場</span><span class="en">Markets</span></dt><dd>US · UK · DE · AU · JP</dd></div>
+        <div><dt><span class="ja">監視している出品</span><span class="en">Listings under watch</span></dt><dd>14,444</dd></div>
+        <div><dt><span class="ja">開発</span><span class="en">Development</span></dt><dd><span class="ja"><span data-day>144</span> 日目</span><span class="en">Day <span data-day>144</span></span></dd></div>
+      </dl>
+      <a class="cue" href="#idea"><i aria-hidden="true"></i><span>Scroll</span></a>
+    </div>
+  </div>
+</div>
+
+<!-- ================= manifesto ================= -->
+<section id="idea">
+  <div class="wrap sec">
+    <p class="tag"><span class="ja">考え方</span><span class="en">The idea</span></p>
+    <p class="mf disp ja" data-split="char">売る現場があるから<br>作るものに迷わない。<br><span data-hot>作る力</span>があるから<br>売り方を変えられる。</p>
+    <p class="mf disp en" data-split="word">Because we sell, we know what to build. Because we <span data-hot>build,</span> we can change how we sell.</p>
+    <div class="mf-sub">
+      <p class="rv"><b>01 / Commerce</b><span class="ja">カメラ・腕時計・アイウェア・オーディオなど日本の品を eBay の4市場と Amazon.co.jp で販売しています。1点ずつ検品して梱包し世界へ送ります。</span><span class="en">We sell cameras, watches, eyewear, audio equipment and more from Japan across four eBay markets and Amazon.co.jp, inspecting and packing each item by hand.</span></p>
+      <p class="rv" style="--d:.12s"><b>02 / Engineering</b><span class="ja">出品・在庫監視・関税計算・経理。商いに必要な道具は市販品に頼らず自社で開発しています。毎日自分たちで使うので、止まれば真っ先に自分たちが困ります。</span><span class="en">Listing, stock monitoring, tariff calculation, accounting — we build the tools our trade needs instead of buying them. We use them daily, so we are the first to suffer when they break.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= loop ================= -->
+<section id="loop">
+  <div class="wrap sec">
+    <div class="head">
+      <div class="rv">
+        <p class="tag"><span class="ja">事業のかたち</span><span class="en">How the business works</span></p>
+        <h2 class="disp"><span class="ja">売る・測る・作る・任せる。<br>ひとつの輪で回す。</span><span class="en">Sell, measure, build, automate — one loop.</span></h2>
+      </div>
+      <p class="rv ja" style="--d:.1s">商いと開発を別々の部署にしていません。売って分かったことを数字にし、その日のうちに道具へ反映し、回るようになった仕事は機械に任せます。この輪が速く回るほど事業は強くなります。</p>
+      <p class="rv en" style="--d:.1s">Commerce and engineering are not separate departments here. What we learn from selling becomes data, the data becomes tooling the same day, and work that runs smoothly is handed to machines. The faster this loop turns, the stronger the business.</p>
+    </div>
+
+    <div class="loop">
+      <svg class="orbit rv" viewBox="0 0 560 560" role="img" aria-labelledby="orbit-t">
+        <title id="orbit-t">Sell, measure, build, automate</title>
+        <circle class="ring" cx="280" cy="280" r="200"/>
+        <circle class="ring dash" cx="280" cy="280" r="236"/>
+        <circle class="ring" cx="280" cy="280" r="118" stroke-dasharray="1 6"/>
+        <path id="orb" d="M280 80A200 200 0 1 1 279.99 80" fill="none"/>
+        <g aria-hidden="true">
+          <circle class="p" r="5"><animateMotion dur="14s" repeatCount="indefinite"><mpath href="#orb"/></animateMotion></circle>
+          <circle class="p" r="3" opacity=".55"><animateMotion dur="14s" begin="-4.7s" repeatCount="indefinite"><mpath href="#orb"/></animateMotion></circle>
+          <circle class="p" r="3" opacity=".55"><animateMotion dur="14s" begin="-9.4s" repeatCount="indefinite"><mpath href="#orb"/></animateMotion></circle>
+        </g>
+        <text class="core" x="280" y="274">COMMERCE</text>
+        <text class="core" x="280" y="294">× ENGINEERING</text>
+        <g class="node"><circle cx="280" cy="80" r="46"/><text class="ja" x="280" y="80">売る</text><text class="en" x="280" y="80">Sell</text><text class="num" x="280" y="20">01</text></g>
+        <g class="node"><circle cx="480" cy="280" r="46"/><text class="ja" x="480" y="280">測る</text><text class="en" x="480" y="280">Measure</text><text class="num" x="542" y="280">02</text></g>
+        <g class="node"><circle cx="280" cy="480" r="46"/><text class="ja" x="280" y="480">作る</text><text class="en" x="280" y="480">Build</text><text class="num" x="280" y="542">03</text></g>
+        <g class="node"><circle cx="80" cy="280" r="46"/><text class="ja" x="80" y="280">任せる</text><text class="en" x="80" y="280">Automate</text><text class="num" x="18" y="280">04</text></g>
+      </svg>
+      <ol class="steps">
+        <li class="rv"><span class="n">01</span><h3 class="disp"><span class="ja">売る</span><span class="en">Sell</span></h3><p><span class="ja">日本の品を5つの市場の買い手へ。毎日の注文が次に作るものを教えてくれます。</span><span class="en">Goods from Japan to buyers in five markets. Every day's orders tell us what to build next.</span></p></li>
+        <li class="rv" style="--d:.08s"><span class="n">02</span><h3 class="disp"><span class="ja">測る</span><span class="en">Measure</span></h3><p><span class="ja">注文・在庫・送料・関税をすべて記録し、請求の実額と突き合わせます。勘ではなく実測で決めます。</span><span class="en">Orders, stock, shipping and duties are all recorded and reconciled against real invoices. We decide on measurements, not hunches.</span></p></li>
+        <li class="rv" style="--d:.16s"><span class="n">03</span><h3 class="disp"><span class="ja">作る</span><span class="en">Build</span></h3><p><span class="ja">現場の気づきをその日のうちに機能にします。AI エージェントと開発し、テストを通ったものだけを本番へ。</span><span class="en">Floor feedback becomes a feature the same day. We develop with AI agents, and only what passes the tests goes to production.</span></p></li>
+        <li class="rv" style="--d:.24s"><span class="n">04</span><h3 class="disp"><span class="ja">任せる</span><span class="en">Automate</span></h3><p><span class="ja">回るようになった仕事は定期ジョブと AI に渡します。人には判断だけを残します。</span><span class="en">Work that runs smoothly is handed to scheduled jobs and AI. People keep the decisions.</span></p></li>
+      </ol>
+    </div>
+
+    <dl class="figs rv">
+      <div><dt><span class="ja">監視している出品</span><span class="en">Listings under watch</span></dt><dd><span data-count="14444">14,444</span></dd></div>
+      <div><dt><span class="ja">在庫の自動確認（1日あたり）</span><span class="en">Automated stock checks per day</span></dt><dd><span data-count="27278">27,278</span></dd></div>
+      <div><dt><span class="ja">自動テスト</span><span class="en">Automated tests</span></dt><dd><span data-count="2281">2,281</span></dd></div>
+      <div><dt><span class="ja">昼も夜も回る定期ジョブ</span><span class="en">Scheduled jobs, day and night</span></dt><dd><span data-count="33">33</span></dd></div>
+    </dl>
+    <p class="asof"><span class="ja">2026-11-24 時点・本番環境の実測値</span><span class="en">Measured in production as of 2026-11-24</span></p>
+  </div>
+</section>
+
+<!-- ================= capabilities ================= -->
+<section id="tech">
+  <div class="wrap sec">
+    <div class="head">
+      <div class="rv">
+        <p class="tag"><span class="ja">技術</span><span class="en">Capabilities</span></p>
+        <h2 class="disp"><span class="ja">動き続ける仕組みを作る。</span><span class="en">We build systems that keep running.</span></h2>
+      </div>
+      <p class="rv ja" style="--d:.1s">外部のサイトも API も AI も、いつか予告なく変わります。うまく動く日ではなく黙って壊れる日のために設計の時間を使っています。</p>
+      <p class="rv en" style="--d:.1s">External sites, APIs and AI models all change without notice. We spend our design time not on the day things work, but on the day they break without a sound.</p>
+    </div>
+    <div class="caps">
+      <article class="cap rv">
+        <svg class="g1" viewBox="0 0 160 100" aria-hidden="true"><path class="gl" d="M42 50h26M92 50h26" stroke-dasharray="2 5"/><circle class="gl" cx="30" cy="50" r="12"/><circle class="gl" cx="80" cy="50" r="12"/><circle class="gl" cx="130" cy="50" r="12"/><circle class="gs" cx="30" cy="50" r="4.5"/></svg>
+        <span class="k">01 / AI</span>
+        <h3 class="disp"><span class="ja">AI を業務に組み込む</span><span class="en">AI inside the workflow</span></h3>
+        <p><span class="ja">3社のモデルを連鎖させ、どの段が答えたかまで計測します。文章の生成・分類・重量や関税コードの推定を本番で回しています。</span><span class="en">Three providers chained together, with every answer attributed to the model that gave it. Text generation, classification, weight and tariff-code estimation run in production.</span></p>
+      </article>
+      <article class="cap rv" style="--d:.08s">
+        <svg class="g2" viewBox="0 0 160 100" aria-hidden="true"><path class="gl flow" d="M80 50L26 20M80 50L134 20M80 50L20 60M80 50L140 60M80 50L50 88M80 50L110 88"/><rect class="gl" x="18" y="12" width="14" height="14"/><rect class="gl" x="128" y="12" width="14" height="14"/><rect class="gl" x="10" y="54" width="14" height="14"/><rect class="gl" x="136" y="54" width="14" height="14"/><rect class="gl" x="42" y="82" width="14" height="14"/><rect class="gl" x="104" y="82" width="14" height="14"/><circle class="gl" cx="80" cy="50" r="13" style="fill:var(--night)"/><circle class="gs" cx="80" cy="50" r="4"/></svg>
+        <span class="k">02 / Integration</span>
+        <h3 class="disp"><span class="ja">外部のサービスをつなぐ</span><span class="en">Everything connected</span></h3>
+        <p><span class="ja">eBay・Amazon・運送会社・税関データの API と、11のマーケットプレイスの読み取りをひとつの流れにまとめます。</span><span class="en">APIs from eBay, Amazon, carriers and customs data, plus readers for 11 marketplaces, brought into a single flow.</span></p>
+      </article>
+      <article class="cap rv" style="--d:.16s">
+        <svg class="g3" viewBox="0 0 160 100" aria-hidden="true"><circle class="gl" cx="80" cy="50" r="36" stroke-dasharray="1 8.42"/><circle class="gl" cx="80" cy="50" r="25"/><path class="gl" d="M80 50h14"/><path class="gss hand" d="M80 50V29"/><circle class="gs" cx="80" cy="50" r="3.5"/></svg>
+        <span class="k">03 / Automation</span>
+        <h3 class="disp"><span class="ja">止まらない自動化</span><span class="en">Automation that doesn't stop</span></h3>
+        <p><span class="ja">33の定期ジョブが昼も夜も回ります。読み取りの異常は毎朝の検査が見つけ、迷ったら安全な側へ倒します。</span><span class="en">33 scheduled jobs run around the clock. A canary catches read failures every morning, and when in doubt the system fails to the safe side.</span></p>
+      </article>
+      <article class="cap rv">
+        <svg class="g4" viewBox="0 0 160 100" aria-hidden="true"><path class="gl" d="M14 34h54M14 50h38M14 66h46M14 82h30"/><path class="gl b" style="--o:7px" d="M92 34h54"/><path class="gl b" style="--o:-6px" d="M92 50h38"/><path class="gl b" style="--o:5px" d="M92 66h46"/><path class="gl b" style="--o:-8px" d="M92 82h30"/><path class="gss" d="M71 14l6 6 10-11"/></svg>
+        <span class="k">04 / Reconciliation</span>
+        <h3 class="disp"><span class="ja">数字を合わせる</span><span class="en">Numbers that agree</span></h3>
+        <p><span class="ja">eBay の全出品と自社の記録を毎朝突き合わせます。売上・請求・入金は月次で1円単位まで合わせます。</span><span class="en">Every eBay listing is compared with our own records each morning. Sales, invoices and payouts are reconciled monthly, down to the yen.</span></p>
+      </article>
+      <article class="cap rv" style="--d:.08s">
+        <svg class="g5" viewBox="0 0 160 100" aria-hidden="true"><path class="gl" d="M10 18h84v56H10zM10 30h84"/><path class="gl" d="M106 30h28a4 4 0 0 1 4 4v50a4 4 0 0 1-4 4h-28a4 4 0 0 1-4-4V34a4 4 0 0 1 4-4zM114 82h12"/><path class="gl" d="M30 74v10M74 74v10M22 86h60"/><circle class="gs" cx="18" cy="24" r="2"/></svg>
+        <span class="k">05 / Surfaces</span>
+        <h3 class="disp"><span class="ja">画面を選ばない</span><span class="en">Any surface</span></h3>
+        <p><span class="ja">Web アプリ・ブラウザ拡張・デスクトップ・スマートフォン。使う場所に合わせて作ります。</span><span class="en">Web apps, browser extensions, desktop tools and mobile apps — built for wherever the work happens.</span></p>
+      </article>
+      <article class="cap rv" style="--d:.16s">
+        <svg class="g6" viewBox="0 0 160 100" aria-hidden="true"><path class="gl" d="M12 56h44M80 56h68" stroke-dasharray="2 5"/><path class="gl" d="M62 38v36M74 38v36"/><path class="gss" d="M58 22l7 7 12-13"/><circle class="gs" cx="16" cy="56" r="4.5"/></svg>
+        <span class="k">06 / Human in the loop</span>
+        <h3 class="disp"><span class="ja">人が決める設計</span><span class="en">People decide</span></h3>
+        <p><span class="ja">お金と顧客に触れる操作は人の承認を通します。AI に任せる範囲を先に決めてから作ります。</span><span class="en">Anything that touches money or customers goes through human approval. We draw the line for AI first, then build.</span></p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= products ================= -->
+<section id="work">
+  <div class="wrap sec">
+    <div class="head">
+      <div class="rv">
+        <p class="tag"><span class="ja">プロダクト</span><span class="en">Products</span></p>
+        <h2 class="disp"><span class="ja">必要になるたび作ってきた。</span><span class="en">Built as the need arose.</span></h2>
+      </div>
+      <p class="rv ja" style="--d:.1s">業務システムからブラウザ拡張、デスクトップ、スマートフォンまで。どれも自分たちの現場で使うために作り、使いながら直しています。</p>
+      <p class="rv en" style="--d:.1s">From back-office systems to browser extensions, desktop tools and mobile apps. Each was built for our own floor and is refined in daily use.</p>
+    </div>
+
+    <article class="feat">
+      <div class="shot rv" data-tilt>
+        <div class="browser">
+          <div class="chrome" aria-hidden="true"><i></i><i></i><i></i><span>openlister</span></div>
+          <img src="assets/openlister.webp" width="1600" height="832" loading="lazy" alt="OpenLister の画面（デモ用データ） / OpenLister screen with demo data">
+        </div>
+      </div>
+      <div class="rv" style="--d:.12s">
+        <span class="s"><span class="ja">主力システム・本番運用中</span><span class="en">Flagship · in production</span></span>
+        <h3 class="disp pn">OpenLister</h3>
+        <p><span class="ja">eBay 輸出のリサーチから経理までをひとつにつなぐ運用システム。自社の本番で毎日使いながら育てています。</span><span class="en">An operations system that connects eBay export work from research to accounting. We run our own business on it every day.</span></p>
+        <p class="st">Python · FastAPI · PostgreSQL · Docker · Claude / OpenAI / Gemini</p>
+        <a class="go" href="https://openlister.net/lp/" rel="noopener"><span><span class="ja">製品ページを見る</span><span class="en">Product page (Japanese)</span></span><span aria-hidden="true">↗</span></a>
+      </div>
+    </article>
+
+    <article class="feat2">
+      <div class="rv">
+        <span class="s"><span class="ja">スマートフォンアプリ</span><span class="en">Mobile app</span></span>
+        <h3 class="disp pn">Meeting Minutes</h3>
+        <p><span class="ja">録音から AI が議事録を作る Android アプリ。話者の候補・名刺の読み取り・連絡先との連携まで扱います。</span><span class="en">An Android app that turns recordings into structured minutes with AI — speaker candidates, business-card OCR and contact sync included.</span></p>
+        <p class="st">Flutter · Android · Gemini API</p>
+      </div>
+      <div class="phone-stage rv" style="--d:.12s" data-rise>
+        <div class="phone"><img src="assets/minutes.webp" width="540" height="1200" loading="lazy" alt="Meeting Minutes アプリのホーム画面 / Meeting Minutes home screen"></div>
+      </div>
+    </article>
+
+    <div class="rows">
+      <article class="row rv"><h3 class="disp pn"><span class="s"><span class="ja">本番運用中</span><span class="en">In production</span></span>AmaLister</h3><p><span class="ja">Amazon.co.jp 向けの出品・在庫監視・受注システム。OpenLister の姉妹として2026年10月から動いています。</span><span class="en">Listing, stock monitoring and order handling for Amazon.co.jp. A sibling of OpenLister, live since October 2026.</span></p><p class="st">Python · FastAPI · SP-API</p></article>
+      <article class="row rv"><h3 class="disp pn"><span class="s"><span class="ja">Web アプリ</span><span class="en">Web app</span></span>HTS Tariff Calculator</h3><p><span class="ja">米国国際貿易委員会の HTS API と AI を組み合わせ、Section 232 や 301 を含む米国の輸入関税を計算します。</span><span class="en">Combines the USITC HTS API with AI to calculate US import duties, including Section 232 and 301 tariffs.</span></p><p class="st">TypeScript · React · Node.js</p></article>
+      <article class="row rv"><h3 class="disp pn"><span class="s"><span class="ja">デスクトップ</span><span class="en">Desktop</span></span>eBay Credential Helper</h3><p><span class="ja">eBay API の認証情報を画面の案内どおりに取得できるツール。処理は手元の PC の中だけで完結します。</span><span class="en">A guided tool for obtaining eBay API credentials. Everything runs locally on the user's own machine.</span></p><p class="st">Python · Windows / macOS</p></article>
+      <article class="row rv"><h3 class="disp pn"><span class="s"><span class="ja">AI エージェント基盤</span><span class="en">Agent tooling</span></span>llm-wiki-kit</h3><p><span class="ja">AI エージェントに会話をまたぐ知識ベースを持たせるキット。過去の判断と失敗を次の開発に効かせます。</span><span class="en">Gives AI coding agents a knowledge base that persists across sessions, so past decisions and failures inform the next change.</span></p><p class="st">Python · Markdown · Claude Code</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= how we build ================= -->
+<section id="build">
+  <div class="wrap sec" style="padding-bottom:0">
+    <div class="head">
+      <div class="rv">
+        <p class="tag"><span class="ja">開発の進め方</span><span class="en">How we build</span></p>
+        <h2 class="disp"><span class="ja">AI と作り、人が決める。</span><span class="en">Built with AI. Decided by people.</span></h2>
+      </div>
+      <p class="rv ja" style="--d:.1s">少人数で<span data-day>144</span>日のあいだに836回のコミットと2,281本のテストを積めたのは、AI エージェントを開発の中心に置いているからです。速さのために安全を削らない決まりを先に作りました。</p>
+      <p class="rv en" style="--d:.1s">A very small team landed 836 commits and 2,281 tests in <span data-day>144</span> days because AI agents sit at the center of our development. The rules that keep speed from eating safety came first.</p>
+    </div>
+    <ol class="rules">
+      <li class="rv"><h3 class="disp"><span class="ja">仕様書から始める</span><span class="en">Start from a written spec</span></h3><p><span class="ja">AI に実装を任せる前に、読む場所・守る契約・テストを文章にします。</span><span class="en">Before an agent writes code, we put what to read, which contracts to keep and how to test into words.</span></p></li>
+      <li class="rv" style="--d:.08s"><h3 class="disp"><span class="ja">気づきをその日のうちに</span><span class="en">Feedback ships the same day</span></h3><p><span class="ja">使う人のひとことを当日に実装して配り、マニュアルも一緒に更新します。</span><span class="en">A remark from someone using the tool is implemented, released and documented the same day.</span></p></li>
+      <li class="rv"><h3 class="disp"><span class="ja">判断を残す</span><span class="en">Decisions are written down</span></h3><p><span class="ja">なぜそう決めたか・何に失敗したかを社内の Wiki に書き、次の開発で AI と人の両方が読みます。190ページを超えました。</span><span class="en">Why we decided something and what went wrong go into an internal wiki that both agents and people read. It now exceeds 190 pages.</span></p></li>
+      <li class="rv" style="--d:.08s"><h3 class="disp"><span class="ja">失敗を検査に変える</span><span class="en">Failures become checks</span></h3><p><span class="ja">一度起きた事故は自動の検査にして全経路へ入れます。同じ失敗を二度しない仕組みを積み上げています。</span><span class="en">An incident that happened once becomes an automated check on every path. The defenses only accumulate.</span></p></li>
+    </ol>
+  </div>
+  <div class="mq" id="mq" aria-label="Technology stack">
+    <div class="track"><span>Python</span><span>FastAPI</span><span>PostgreSQL 16</span><span>SQLAlchemy</span><span>Alembic</span><span>Procrastinate</span><span>Docker Compose</span><span>Caddy</span><span>Cloudflare</span><span>pytest</span><span>Ruff</span><span>WebGL / GLSL</span></div>
+    <div class="track rev"><span>Claude API</span><span>OpenAI API</span><span>Gemini API</span><span>eBay REST / Trading API</span><span>Amazon SP-API</span><span>USITC HTS API</span><span>Telegram Bot API</span><span>Chrome Extension</span><span>TypeScript</span><span>React</span><span>Flutter</span><span>MCP</span></div>
+  </div>
+</section>
+
+<!-- ================= company ================= -->
+<section id="company">
+  <div class="wrap sec">
+    <div class="close">
+      <div class="rv" id="contact">
+        <p class="tag"><span class="ja">お問い合わせ</span><span class="en">Contact</span></p>
+        <h2 class="disp"><span class="ja">一緒に<br>動かしませんか。</span><span class="en">Let's make it run.</span></h2>
+        <p class="lede"><span class="ja">システムの導入のご相談・お取引・勉強会でのお話など、メールでお気軽にどうぞ。</span><span class="en">For product inquiries, business or speaking requests, email us any time.</span></p>
+        <a class="mail" href="mailto:info@central-selection.com">info@central-selection.com <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="co rv" style="--d:.12s">
+        <dl>
+          <div><dt><span class="ja">屋号</span><span class="en">Name</span></dt><dd>Central Selection<span class="ja">（セントラルセレクション）</span></dd></div>
+          <div><dt><span class="ja">所在地</span><span class="en">Location</span></dt><dd><span class="ja">長野県</span><span class="en">Nagano, Japan</span></dd></div>
+          <div><dt><span class="ja">事業内容</span><span class="en">Business</span></dt><dd><span class="ja">越境 EC・業務ソフトウェアの開発</span><span class="en">Cross-border e-commerce · operations software</span></dd></div>
+          <div><dt><span class="ja">プロダクト</span><span class="en">Products</span></dt><dd>OpenLister · AmaLister</dd></div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap mono">
+    <span>© 2026 Central Selection · Nagano, Japan</span>
+    <span><span class="ja">このページは手書きの HTML・CSS・GLSL で作られています</span><span class="en">This page is hand-written HTML, CSS and GLSL</span></span>
+  </div>
+</footer>
+
+<script id="fs" type="x-shader/x-fragment">
+#extension GL_OES_standard_derivatives : enable
+precision highp float;
+uniform vec2 r;   // resolution (px)
+uniform float t;  // time (s)
+uniform vec2 m;   // pointer, in units of r.y, origin bottom-left
+float hash(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p); f = f * f * (3. - 2. * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), f.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), f.x), f.y);
+}
+float fbm(vec2 p) { float a = .5, s = 0.; for (int i = 0; i < 5; i++) { s += a * noise(p); p = p * 2.03 + vec2(17.3, 9.1); a *= .5; } return s; }
+void main() {
+  vec2 uv = gl_FragCoord.xy / r.y;
+  vec2 p = uv * 1.35 + vec2(t * .010, t * .006);
+  vec2 w = vec2(fbm(p + t * .013), fbm(p + vec2(5.2, 1.3) - t * .009));
+  float h = fbm(p + .55 * w);
+  vec2 d = uv - m;
+  h += .09 * exp(-dot(d, d) * 5.);                       // the terrain rises under the pointer
+  float v = h * 15.;
+  float px = abs(fract(v - .5) - .5) / max(fwidth(v), 1e-4);   // distance to the nearest contour, in pixels
+  float line = 1. - smoothstep(.0, 1.25, px);
+  float major = 1. - step(.5, mod(floor(v + .5), 5.));   // every fifth contour is an index line
+  vec3 col = mix(vec3(.020, .046, .086), vec3(.050, .110, .190), smoothstep(.25, .8, h));
+  col += vec3(.74, .84, .93) * line * (.16 + .30 * major) * smoothstep(.18, .45, h);
+  float lvl = .58 + .03 * sin(t * .17);                  // one contour is drawn in vermilion
+  float a = abs(h - lvl);
+  col += vec3(.886, .278, .169) * ((1. - smoothstep(.0, 1.15, a / max(fwidth(h), 1e-5))) * .95 + exp(-a * 90.) * .11);
+  col *= 1. - .35 * smoothstep(.4, 1.5, length(uv - vec2(.5 * r.x / r.y, .5)));
+  gl_FragColor = vec4(col, 1.);
+}
+</script>
+
+<script>
+(function () {
+  var root = document.documentElement, calm = root.classList.contains("calm");
+  var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
+  var titles = {
+    ja: ["Central Selection | 商いを技術で動かす", "Central Selection は長野から日本の品を世界へ届ける越境 EC の会社です。その仕事を動かすソフトウェアをすべて自分たちで作っています。"],
+    en: ["Central Selection | Commerce, run by engineering", "Central Selection sells goods from Japan to the world from Nagano, and builds every piece of software that runs the business."]
+  };
+
+  /* ---- language ---- */
+  function setLang(l, save) {
+    root.setAttribute("data-lang", l); root.lang = l; document.title = titles[l][0];
+    var md = document.querySelector('meta[name="description"]'); if (md) md.content = titles[l][1];
+    $$("[data-set-lang]").forEach(function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-set-lang") === l)); });
+    if (save) { try { localStorage.setItem("cs-lang", l); } catch (e) {} }
+    window.dispatchEvent(new Event("scroll"));
+  }
+  $$("[data-set-lang]").forEach(function (b) { b.addEventListener("click", function () { setLang(b.getAttribute("data-set-lang"), true); }); });
+
+  /* ---- day counter: first commit 2026-07-04 (JST) ---- */
+  var day = Math.floor((Date.now() - Date.UTC(2026, 6, 3, 15)) / 864e5) + 1;
+  if (day > 0) $$("[data-day]").forEach(function (e) { e.textContent = day; });
+
+  /* ---- stack marquee: duplicate each row once so the loop is seamless ---- */
+  $$("#mq .track").forEach(function (tr) {
+    $$("span", tr).forEach(function (s) { var c = s.cloneNode(true); c.setAttribute("aria-hidden", "true"); tr.appendChild(c); });
+  });
+
+  /* ---- manifesto: split into units that light up with scroll ---- */
+  var mfs = $$(".mf");
+  mfs.forEach(function (el) {
+    var byChar = el.getAttribute("data-split") === "char";
+    (function walk(node, hot) {
+      Array.prototype.slice.call(node.childNodes).forEach(function (n) {
+        if (n.nodeType === 3) {
+          var parts = byChar ? Array.from(n.nodeValue) : n.nodeValue.split(/(\s+)/), f = document.createDocumentFragment();
+          parts.forEach(function (ch) {
+            if (!ch) return;
+            if (/^\s+$/.test(ch)) { f.appendChild(document.createTextNode(ch)); return; }
+            var s = document.createElement("span"); s.className = "u" + (hot ? " hot" : ""); s.textContent = ch; f.appendChild(s);
+          });
+          node.replaceChild(f, n);
+        } else if (n.nodeType === 1 && n.tagName !== "BR") { walk(n, hot || n.hasAttribute("data-hot")); }
+      });
+    })(el, false);
+    el._u = $$(".u", el);
+    if (calm) el._u.forEach(function (u) { u.classList.add("on"); });
+  });
+
+  /* ---- scroll-driven bits (one rAF-throttled handler) ---- */
+  var bar = document.getElementById("bar"), hdr = document.getElementById("hdr"), hero = document.getElementById("top");
+  var rises = $$("[data-rise]"), ticking = false;
+  function onScroll() {
+    ticking = false;
+    var vh = innerHeight, y = scrollY, max = document.documentElement.scrollHeight - vh;
+    bar.style.transform = "scaleX(" + (max > 0 ? Math.min(1, y / max) : 0) + ")";
+    hdr.classList.toggle("solid", y > hero.offsetHeight - 70);
+    if (calm) return;
+    mfs.forEach(function (el) {
+      if (!el.offsetParent) return;
+      var r = el.getBoundingClientRect(), p = (vh * .82 - r.top) / (r.height + vh * .32), n = Math.round(Math.max(0, Math.min(1, p)) * el._u.length);
+      if (n === el._n) return; el._n = n;
+      el._u.forEach(function (u, i) { u.classList.toggle("on", i < n); });
+    });
+    rises.forEach(function (el) {
+      var r = el.getBoundingClientRect(), p = Math.max(0, Math.min(1, (vh - r.top) / (vh + r.height)));
+      el.firstElementChild.style.setProperty("--py", ((1 - p) * 90 - 20).toFixed(1) + "px");
+    });
+  }
+  addEventListener("scroll", function () { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+  addEventListener("resize", onScroll);
+  setLang(root.getAttribute("data-lang") === "en" ? "en" : "ja", false);
+  onScroll();
+
+  if (calm) { $$("svg").forEach(function (s) { if (s.pauseAnimations) s.pauseAnimations(); }); }
+
+  /* ---- reveal + count-up ---- */
+  if ("IntersectionObserver" in window && !calm) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (x) { if (x.isIntersecting) { x.target.classList.add("in"); io.unobserve(x.target); } });
+    }, { rootMargin: "0px 0px -8% 0px", threshold: .06 });
+    $$(".rv").forEach(function (e) { io.observe(e); });
+    var fmt = new Intl.NumberFormat("en-US");
+    var co = new IntersectionObserver(function (es) {
+      es.forEach(function (x) {
+        if (!x.isIntersecting) return; co.unobserve(x.target);
+        var el = x.target, to = +el.getAttribute("data-count"), t0 = performance.now(), dur = 1500;
+        (function step(now) { var p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 4); el.textContent = fmt.format(Math.round(to * e)); if (p < 1) requestAnimationFrame(step); })(t0);
+      });
+    }, { threshold: .6 });
+    $$("[data-count]").forEach(function (e) { co.observe(e); });
+  } else { $$(".rv").forEach(function (e) { e.classList.add("in"); }); }
+
+  /* ---- pointer: tilt on the screenshot, spotlight on capability tiles ---- */
+  if (!calm && matchMedia("(hover: hover)").matches) {
+    $$("[data-tilt]").forEach(function (el) {
+      var b = el.firstElementChild;
+      el.addEventListener("pointermove", function (e) { var r = el.getBoundingClientRect(); b.style.setProperty("--ry", (((e.clientX - r.left) / r.width - .5) * 7).toFixed(2) + "deg"); b.style.setProperty("--rx", ((.5 - (e.clientY - r.top) / r.height) * 6).toFixed(2) + "deg"); });
+      el.addEventListener("pointerleave", function () { b.style.setProperty("--ry", "0deg"); b.style.setProperty("--rx", "0deg"); });
+    });
+  }
+  $$(".cap").forEach(function (el) {
+    el.addEventListener("pointermove", function (e) { var r = el.getBoundingClientRect(); el.style.setProperty("--mx", (e.clientX - r.left) + "px"); el.style.setProperty("--my", (e.clientY - r.top) + "px"); });
+  });
+
+  /* ---- hero terrain (WebGL 1 + OES_standard_derivatives) ---- */
+  (function () {
+    var cv = document.getElementById("terrain"), gl;
+    try { gl = cv.getContext("webgl", { antialias: false, alpha: false, powerPreference: "low-power" }); } catch (e) {}
+    if (!gl || !gl.getExtension("OES_standard_derivatives")) return;
+    function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(s)); return null; } return s; }
+    var vs = sh(gl.VERTEX_SHADER, "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}");
+    var fs = sh(gl.FRAGMENT_SHADER, document.getElementById("fs").textContent.replace(/^\s+/, ""));
+    if (!vs || !fs) return;
+    var pr = gl.createProgram(); gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
+    if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) return;
+    gl.useProgram(pr);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);   // one big triangle
+    var la = gl.getAttribLocation(pr, "a"); gl.enableVertexAttribArray(la); gl.vertexAttribPointer(la, 2, gl.FLOAT, false, 0, 0);
+    var uR = gl.getUniformLocation(pr, "r"), uT = gl.getUniformLocation(pr, "t"), uM = gl.getUniformLocation(pr, "m");
+    var W = 0, H = 0, mx = .72, my = .5, tx = mx, ty = my, visible = true, raf = 0, t0 = performance.now();
+    function size() {
+      var dpr = Math.min(devicePixelRatio || 1, 1.5), w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
+      if (w === W && h === H) return; W = cv.width = w; H = cv.height = h; gl.viewport(0, 0, W, H);
+    }
+    function frame(now) {
+      raf = 0; size();
+      mx += (tx - mx) * .045; my += (ty - my) * .045;
+      gl.uniform2f(uR, W, H); gl.uniform1f(uT, calm ? 21 : (now - t0) / 1000 + 21);
+      gl.uniform2f(uM, mx * W / H, 1 - my);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (!calm && visible && !document.hidden) raf = requestAnimationFrame(frame);
+    }
+    function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+    hero.addEventListener("pointermove", function (e) { var r = cv.getBoundingClientRect(); tx = (e.clientX - r.left) / r.width; ty = (e.clientY - r.top) / r.height; if (calm) { mx = tx; my = ty; kick(); } });
+    if ("IntersectionObserver" in window) new IntersectionObserver(function (es) { visible = es[0].isIntersecting; if (visible) kick(); }).observe(hero);
+    document.addEventListener("visibilitychange", kick); addEventListener("resize", kick);
+    kick(); cv.classList.add("on");
+  })();
+})();
+</script>
+</body>
+</html>
