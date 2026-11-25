@@ -11,13 +11,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Central Selection | 商いを技術で動かす</title>
 <meta name="description" content="Central Selection は長野から日本の品を世界へ届ける越境 EC の会社です。その仕事を動かすソフトウェアをすべて自分たちで作っています。">
-<meta name="theme-color" content="#06101c">
+<meta name="theme-color" content="#090c0e">
 <link rel="canonical" href="https://central-selection.com/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://central-selection.com/">
 <meta property="og:title" content="Central Selection — Commerce, run by engineering">
 <meta property="og:description" content="Cross-border commerce from Nagano, Japan, run on software we build ourselves.">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2306101c'/%3E%3Cpath d='M44 18H27a14 14 0 0 0 0 28h17M40 26H28a6 6 0 0 0 0 12h12' fill='none' stroke='%23e2472b' stroke-width='5'/%3E%3C/svg%3E">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23090c0e'/%3E%3Cpath d='M44 18H27a14 14 0 0 0 0 28h17M40 26H28a6 6 0 0 0 0 12h12' fill='none' stroke='%2317a594' stroke-width='5'/%3E%3C/svg%3E">
 <script>
 /* Before first paint: language (?lang= > saved > browser) and motion preference (?motion=on overrides). */
 (function () {
@@ -35,17 +35,18 @@
 <style>
 /* ---------- tokens ---------- */
 :root {
-  --night: #06101c;
-  --indigo: #0c1d33;
-  --paper: #f5f6f7;
+  --night: #090c0e;
+  --indigo: #141b1f;
+  --paper: #f3f5f5;
   --card: #ffffff;
-  --ink: #0a1b2e;
-  --ink-2: #4b5b6c;
-  --ink-3: #8593a1;
-  --rule: #d6dde4;
-  --ice: #bcd6ee;
-  --ice-2: #7e98b3;
-  --signal: #e2472b;
+  --ink: #0f1518;
+  --ink-2: #4d585d;
+  --ink-3: #879297;
+  --rule: #d7dddf;
+  --ice: #c8d6d8;
+  --ice-2: #84979b;
+  --signal: #17a594;
+  --signal-t: #0c7c6e;   /* small accent text on light surfaces */
   --sans: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", system-ui, sans-serif;
   --serif: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
   --serif-en: "Instrument Serif", "Times New Roman", serif;
@@ -99,10 +100,10 @@ html[data-lang="en"] .disp, .disp.pn { font-family: var(--serif-en); font-weight
 .top.solid .lang button[aria-pressed="true"] span { color: var(--paper); }
 
 /* ---------- hero ---------- */
-.hero { position: relative; min-height: 100vh; min-height: 100svh; background: radial-gradient(120% 90% at 70% 20%, #12294a 0%, var(--night) 62%); color: #fff; display: flex; overflow: hidden; }
+.hero { position: relative; min-height: 100vh; min-height: 100svh; background: radial-gradient(120% 90% at 70% 20%, #18292d 0%, var(--night) 62%); color: #fff; display: flex; overflow: hidden; }
 .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity 1.4s ease; }
 .hero canvas.on { opacity: 1; }
-.hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(6, 16, 28, .74) 0%, rgba(6, 16, 28, .2) 58%, transparent 100%), linear-gradient(0deg, var(--night) 0%, transparent 26%); }
+.hero::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(9, 12, 14, .74) 0%, rgba(9, 12, 14, .2) 58%, transparent 100%), linear-gradient(0deg, var(--night) 0%, transparent 26%); }
 .hero .wrap { position: relative; z-index: 2; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; padding-top: 120px; padding-bottom: clamp(28px, 5vh, 56px); }
 .eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; font-size: 12px; text-transform: uppercase; color: var(--ice); }
 .eyebrow > span + span::before { content: "/"; margin-right: 18px; color: var(--ice-2); }
@@ -114,11 +115,12 @@ h1 .ln { display: block; overflow: hidden; padding-bottom: .1em; }
 h1 .ln > span { display: block; }
 .js:not(.calm) h1 .ln > span { transform: translateY(110%); animation: rise 1.25s var(--ease) forwards; }
 .js:not(.calm) h1 .ln:nth-child(2) > span { animation-delay: .14s; }
+.hero, #tech, #company, footer, .phone-stage { --signal-t: var(--signal); }
 h1 em { font-style: normal; color: var(--signal); }
 html[data-lang="en"] h1 em { font-style: italic; }
-.lead { margin-top: 30px; max-width: 34em; font-size: clamp(15.5px, 1.35vw, 18px); color: #d5e2ee; }
+.lead { margin-top: 30px; max-width: 34em; font-size: clamp(15.5px, 1.35vw, 18px); color: #d6e0e2; }
 html[data-lang="en"] .lead { max-width: 30em; }
-.hero-foot { margin-top: clamp(40px, 8vh, 96px); padding-top: 22px; border-top: 1px solid rgba(188, 214, 238, .22); display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 22px 40px; }
+.hero-foot { margin-top: clamp(40px, 8vh, 96px); padding-top: 22px; border-top: 1px solid rgba(200, 214, 216, .22); display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 22px 40px; }
 .hero-foot dl { display: flex; flex-wrap: wrap; gap: 18px clamp(28px, 5vw, 72px); }
 .hero-foot dt { font: 400 11px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ice-2); }
 .hero-foot dd { font: 500 clamp(18px, 2.1vw, 27px)/1.3 var(--mono); letter-spacing: -.02em; white-space: nowrap; }
@@ -128,7 +130,7 @@ html[data-lang="en"] .lead { max-width: 30em; }
 
 /* ---------- section scaffolding ---------- */
 .sec { padding-top: clamp(84px, 12vw, 168px); padding-bottom: clamp(84px, 12vw, 168px); }
-.tag { display: flex; align-items: center; gap: 12px; font: 400 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--signal); margin-bottom: 26px; }
+.tag { display: flex; align-items: center; gap: 12px; font: 400 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--signal-t); margin-bottom: 26px; }
 .tag::before { content: ""; width: 28px; height: 1px; background: currentColor; }
 h2 { font-size: clamp(32px, 4.8vw, 68px); line-height: 1.28; text-wrap: balance; }
 html[data-lang="en"] h2 { font-size: clamp(36px, 5.4vw, 78px); line-height: 1.04; }
@@ -161,7 +163,7 @@ html[data-lang="en"] .mf { line-height: 1.1; max-width: 13em; }
 .orbit .p { fill: var(--signal); }
 .steps li { display: grid; grid-template-columns: 48px 1fr; gap: 4px 14px; padding: 22px 0; border-top: 1px solid var(--rule); }
 .steps li:last-child { border-bottom: 1px solid var(--rule); }
-.steps .n { font: 400 12px/2.3 var(--mono); color: var(--signal); }
+.steps .n { font: 400 12px/2.3 var(--mono); color: var(--signal-t); }
 .steps h3 { font-size: 22px; line-height: 1.5; }
 html[data-lang="en"] .steps h3 { font-size: 27px; line-height: 1.2; }
 .steps p { grid-column: 2; color: var(--ink-2); font-size: 15px; }
@@ -174,18 +176,18 @@ html[data-lang="en"] .steps h3 { font-size: 27px; line-height: 1.2; }
 
 /* ---------- capabilities (dark) ---------- */
 #tech { background: var(--night); color: #fff; position: relative; overflow: hidden; }
-#tech::before { content: ""; position: absolute; inset: 0; background: radial-gradient(70% 60% at 85% 0%, rgba(30, 70, 120, .5), transparent 70%), radial-gradient(50% 50% at 0% 100%, rgba(226, 71, 43, .1), transparent 70%); pointer-events: none; }
+#tech::before { content: ""; position: absolute; inset: 0; background: radial-gradient(70% 60% at 85% 0%, rgba(40, 95, 100, .5), transparent 70%), radial-gradient(50% 50% at 0% 100%, rgba(23, 165, 148, .1), transparent 70%); pointer-events: none; }
 #tech .wrap { position: relative; }
-#tech .head p { color: #b9c9d9; }
-.caps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgba(188, 214, 238, .28); border-left: 1px solid rgba(188, 214, 238, .16); }
-.cap { position: relative; padding: 30px 30px 34px; border-right: 1px solid rgba(188, 214, 238, .16); border-bottom: 1px solid rgba(188, 214, 238, .16); display: flex; flex-direction: column; overflow: hidden; }
-.cap::before { content: ""; position: absolute; inset: 0; background: radial-gradient(260px 260px at var(--mx, 50%) var(--my, 0%), rgba(188, 214, 238, .14), transparent 70%); opacity: 0; transition: opacity .4s; pointer-events: none; }
+#tech .head p { color: #b9c6c9; }
+.caps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid rgba(200, 214, 216, .28); border-left: 1px solid rgba(200, 214, 216, .16); }
+.cap { position: relative; padding: 30px 30px 34px; border-right: 1px solid rgba(200, 214, 216, .16); border-bottom: 1px solid rgba(200, 214, 216, .16); display: flex; flex-direction: column; overflow: hidden; }
+.cap::before { content: ""; position: absolute; inset: 0; background: radial-gradient(260px 260px at var(--mx, 50%) var(--my, 0%), rgba(200, 214, 216, .14), transparent 70%); opacity: 0; transition: opacity .4s; pointer-events: none; }
 .cap:hover::before { opacity: 1; }
 .cap svg { width: 100%; max-width: 220px; height: auto; color: var(--ice); margin-bottom: 26px; overflow: visible; }
 .cap .k { font: 400 11px/1 var(--mono); letter-spacing: .1em; color: var(--ice-2); text-transform: uppercase; }
 .cap h3 { margin: 12px 0 10px; font-size: 22px; line-height: 1.45; }
 html[data-lang="en"] .cap h3 { font-size: 28px; line-height: 1.15; }
-.cap p { color: #b9c9d9; font-size: 15px; }
+.cap p { color: #b9c6c9; font-size: 15px; }
 .gl { fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
 .gs { fill: var(--signal); stroke: none; }
 .gss { fill: none; stroke: var(--signal); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -204,12 +206,12 @@ html[data-lang="en"] .cap h3 { font-size: 28px; line-height: 1.15; }
 /* ---------- products ---------- */
 .feat { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 40px clamp(36px, 5vw, 80px); align-items: center; }
 .shot { perspective: 1400px; }
-.browser { border-radius: 10px; overflow: hidden; background: var(--card); box-shadow: 0 1px 0 rgba(10, 27, 46, .08), 0 40px 80px -30px rgba(10, 27, 46, .38), 0 16px 32px -18px rgba(10, 27, 46, .25); transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .6s var(--ease); will-change: transform; }
+.browser { border-radius: 10px; overflow: hidden; background: var(--card); box-shadow: 0 1px 0 rgba(15, 21, 24, .08), 0 40px 80px -30px rgba(15, 21, 24, .38), 0 16px 32px -18px rgba(15, 21, 24, .25); transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .6s var(--ease); will-change: transform; }
 .browser .chrome { height: 34px; background: #e9edf1; display: flex; align-items: center; gap: 7px; padding: 0 14px; }
 .browser .chrome i { width: 9px; height: 9px; border-radius: 50%; background: #c2cbd4; }
 .browser .chrome span { margin-left: 14px; flex: 1; max-width: 300px; height: 18px; border-radius: 9px; background: #fff; font: 400 10px/18px var(--mono); color: var(--ink-3); padding: 0 10px; }
 .feat h3, .feat2 h3 { font-size: clamp(30px, 3.6vw, 50px); line-height: 1.2; }
-.feat .s, .feat2 .s, .row .s { font: 400 11px/1.6 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--signal); }
+.feat .s, .feat2 .s, .row .s { font: 400 11px/1.6 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--signal-t); }
 .feat p, .feat2 p { margin-top: 16px; color: var(--ink-2); }
 .feat p.st, .feat2 p.st, .st { margin-top: 20px; font: 400 12px/1.8 var(--mono); color: var(--ink-3); }
 .go { display: inline-flex; align-items: center; gap: 10px; margin-top: 26px; font-size: 14px; font-weight: 500; text-decoration: none; padding-bottom: 5px; border-bottom: 1px solid var(--ink); }
@@ -217,7 +219,7 @@ html[data-lang="en"] .cap h3 { font-size: 28px; line-height: 1.15; }
 .go:hover > span:last-child { transform: translate(3px, -3px); }
 .feat2 { margin-top: clamp(72px, 10vw, 140px); display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 40px clamp(36px, 5vw, 80px); align-items: center; }
 .phone-stage { position: relative; background: var(--indigo); border-radius: 14px; padding: clamp(36px, 5vw, 64px) 0 0; overflow: hidden; display: flex; justify-content: center; height: clamp(380px, 44vw, 520px); }
-.phone-stage::before { content: ""; position: absolute; inset: 0; background: repeating-radial-gradient(circle at 30% 120%, transparent 0 26px, rgba(188, 214, 238, .09) 26px 27px); }
+.phone-stage::before { content: ""; position: absolute; inset: 0; background: repeating-radial-gradient(circle at 30% 120%, transparent 0 26px, rgba(200, 214, 216, .09) 26px 27px); }
 .phone { position: relative; width: min(58%, 290px); align-self: flex-start; border: 7px solid #0b0f15; border-radius: 30px; overflow: hidden; background: #0b0f15; box-shadow: 0 30px 60px -20px rgba(0, 0, 0, .6); transform: translateY(var(--py, 0px)); }
 .rows { margin-top: clamp(72px, 10vw, 128px); border-top: 1px solid var(--ink); }
 .row { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 6fr) minmax(0, 3fr); gap: 8px 40px; align-items: baseline; padding: 26px 0; border-bottom: 1px solid var(--rule); transition: padding .45s var(--ease), background .45s; }
@@ -231,7 +233,7 @@ html[data-lang="en"] .cap h3 { font-size: 28px; line-height: 1.15; }
 #build { border-top: 1px solid var(--rule); overflow: hidden; }
 .rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 64px; counter-reset: r; border-top: 1px solid var(--ink); }
 .rules li { counter-increment: r; padding: 28px 0 30px; border-bottom: 1px solid var(--rule); display: grid; grid-template-columns: 48px 1fr; gap: 4px 14px; align-content: start; }
-.rules li::before { content: counter(r, decimal-leading-zero); font: 400 12px/2.5 var(--mono); color: var(--signal); }
+.rules li::before { content: counter(r, decimal-leading-zero); font: 400 12px/2.5 var(--mono); color: var(--signal-t); }
 .rules h3 { font-size: 22px; line-height: 1.5; }
 html[data-lang="en"] .rules h3 { font-size: 27px; line-height: 1.2; }
 .rules p { grid-column: 2; color: var(--ink-2); font-size: 15px; }
@@ -246,25 +248,25 @@ html[data-lang="en"] .rules h3 { font-size: 27px; line-height: 1.2; }
 
 /* ---------- closing ---------- */
 #company { position: relative; background: var(--night); color: #fff; overflow: hidden; }
-#company::before { content: ""; position: absolute; inset: -20% -10%; background: repeating-radial-gradient(ellipse at 78% 118%, transparent 0 38px, rgba(188, 214, 238, .1) 38px 39px); animation: breathe 14s ease-in-out infinite alternate; }
+#company::before { content: ""; position: absolute; inset: -20% -10%; background: repeating-radial-gradient(ellipse at 78% 118%, transparent 0 38px, rgba(200, 214, 216, .1) 38px 39px); animation: breathe 14s ease-in-out infinite alternate; }
 #company .wrap { position: relative; }
 .close { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 56px clamp(40px, 6vw, 96px); align-items: end; }
 .close h2 { font-size: clamp(34px, 5.4vw, 78px); line-height: 1.2; }
 html[data-lang="en"] .close h2 { font-size: clamp(44px, 7.4vw, 110px); }
 html[data-lang="en"] .close h2 { line-height: .98; }
-.close .lede { margin-top: 22px; color: #b9c9d9; max-width: 28em; }
+.close .lede { margin-top: 22px; color: #b9c6c9; max-width: 28em; }
 .mail { display: inline-flex; align-items: center; gap: 14px; margin-top: 34px; font: 500 clamp(16px, 2vw, 25px)/1.3 var(--mono); letter-spacing: -.02em; white-space: nowrap; text-decoration: none; padding-bottom: 8px; border-bottom: 1px solid rgba(255, 255, 255, .5); transition: border-color .3s, color .3s; }
 .mail:hover { color: var(--signal); border-color: var(--signal); }
-.co dl div { display: grid; grid-template-columns: 110px 1fr; gap: 18px; padding: 15px 0; border-top: 1px solid rgba(188, 214, 238, .2); font-size: 15px; }
-.co dl div:last-child { border-bottom: 1px solid rgba(188, 214, 238, .2); }
+.co dl div { display: grid; grid-template-columns: 110px 1fr; gap: 18px; padding: 15px 0; border-top: 1px solid rgba(200, 214, 216, .2); font-size: 15px; }
+.co dl div:last-child { border-bottom: 1px solid rgba(200, 214, 216, .2); }
 .co dt { color: var(--ice-2); font-size: 13px; padding-top: 2px; }
 footer { background: var(--night); color: var(--ice-2); }
-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-top: 22px; padding-bottom: 28px; font-size: 11.5px; border-top: 1px solid rgba(188, 214, 238, .14); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; padding-top: 22px; padding-bottom: 28px; font-size: 11.5px; border-top: 1px solid rgba(200, 214, 216, .14); }
 
 /* ---------- keyframes ---------- */
 @keyframes rise { to { transform: none; } }
 @keyframes fade { to { opacity: 1; } }
-@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(226, 71, 43, .55); } 70%, 100% { box-shadow: 0 0 0 10px rgba(226, 71, 43, 0); } }
+@keyframes ping { 0% { box-shadow: 0 0 0 0 rgba(23, 165, 148, .55); } 70%, 100% { box-shadow: 0 0 0 10px rgba(23, 165, 148, 0); } }
 @keyframes drip { 0% { transform: scaleY(0); opacity: 1; } 60% { transform: scaleY(1); opacity: 1; } 100% { transform: scaleY(1); opacity: 0; } }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes dash { to { stroke-dashoffset: -20; } }
@@ -598,11 +600,11 @@ void main() {
   float px = abs(fract(v - .5) - .5) / max(fwidth(v), 1e-4);   // distance to the nearest contour, in pixels
   float line = 1. - smoothstep(.0, 1.25, px);
   float major = 1. - step(.5, mod(floor(v + .5), 5.));   // every fifth contour is an index line
-  vec3 col = mix(vec3(.020, .046, .086), vec3(.050, .110, .190), smoothstep(.25, .8, h));
-  col += vec3(.74, .84, .93) * line * (.16 + .30 * major) * smoothstep(.18, .45, h);
+  vec3 col = mix(vec3(.028, .038, .044), vec3(.078, .106, .122), smoothstep(.25, .8, h));
+  col += vec3(.784, .839, .847) * line * (.16 + .30 * major) * smoothstep(.18, .45, h);
   float lvl = .58 + .03 * sin(t * .17);                  // one contour is drawn in vermilion
   float a = abs(h - lvl);
-  col += vec3(.886, .278, .169) * ((1. - smoothstep(.0, 1.15, a / max(fwidth(h), 1e-5))) * .95 + exp(-a * 90.) * .11);
+  col += vec3(.090, .647, .580) * ((1. - smoothstep(.0, 1.15, a / max(fwidth(h), 1e-5))) * .95 + exp(-a * 90.) * .11);
   col *= 1. - .35 * smoothstep(.4, 1.5, length(uv - vec2(.5 * r.x / r.y, .5)));
   gl_FragColor = vec4(col, 1.);
 }
